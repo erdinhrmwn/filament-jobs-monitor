@@ -67,6 +67,15 @@ class QueueMonitor extends Model
         return Hash::make($job->getRawBody());
     }
 
+    public static function getJobPayload(JobContract $job): array
+    {
+        if ($jobPayload = $job->payload()) {
+            return $jobPayload;
+        }
+
+        return json_decode($job->getRawBody(), true) ?? [];
+    }
+
     /**
      * check if the job is finished.
      */

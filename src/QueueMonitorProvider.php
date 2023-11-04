@@ -47,21 +47,30 @@ class QueueMonitorProvider extends ServiceProvider
     }
 
     /**
+     * Get Job Payload.
+     */
+    public static function getJobPayload(JobContract $job): array
+    {
+        return QueueMonitor::getJobPayload($job);
+    }
+
+    /**
      * Start Queue Monitoring for Job.
      */
     protected static function jobStarted(string $connectionName, JobContract $job): void
     {
         $jobId = self::getJobId($job);
+        $jobPayload = self::getJobPayload($job);
 
         $monitor = QueueMonitor::query()->create([
             'job_id' => $jobId,
             'name' => $job->resolveName(),
-            'connection' => is_null($connectionName) ? config('queue.default') : $connectionName,
+            'connection' => $connectionName,
             'queue' => $job->getQueue(),
             'started_at' => now(),
             'attempt' => $job->attempts(),
             'progress' => 0,
-            'payload' => $job->payload(),
+            'payload' => $jobPayload,
         ]);
 
         QueueMonitor::query()
