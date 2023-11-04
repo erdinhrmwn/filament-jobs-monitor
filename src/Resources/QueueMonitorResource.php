@@ -6,15 +6,15 @@ use Croustibat\FilamentJobsMonitor\FilamentJobsMonitorPlugin;
 use Croustibat\FilamentJobsMonitor\Models\QueueMonitor;
 use Croustibat\FilamentJobsMonitor\Resources\QueueMonitorResource\Pages;
 use Croustibat\FilamentJobsMonitor\Resources\QueueMonitorResource\Widgets\QueueStatsOverview;
-use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\Toggle;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables\Actions\DeleteBulkAction;
+use Filament\Tables\Actions\ViewAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 
 class QueueMonitorResource extends Resource
@@ -26,20 +26,39 @@ class QueueMonitorResource extends Resource
         return $form
             ->schema([
                 TextInput::make('job_id')
+                    ->label('Job ID')
                     ->required()
                     ->maxLength(255),
                 TextInput::make('name')
-                    ->maxLength(255),
+                    ->label('Job Name')
+                    ->maxLength(255)
+                    ->formatStateUsing(fn(string $state): string => str($state)->explode("\\")->last()),
+                TextInput::make('connection')
+                    ->label(__('filament-jobs-monitor::translations.connection'))
+                    ->maxLength(255)
+                    ->formatStateUsing(fn(?string $state): string => $state ?? config('queue.default')),
                 TextInput::make('queue')
+                    ->label(__('filament-jobs-monitor::translations.queue'))
                     ->maxLength(255),
-                DateTimePicker::make('started_at'),
-                DateTimePicker::make('finished_at'),
-                Toggle::make('failed')
-                    ->required(),
+                TextInput::make('started_at')
+                    ->label(__('filament-jobs-monitor::translations.started_at'))
+                    ->formatStateUsing(fn(string $state): string => Carbon::parse($state)->toDateTimeString()),
+                TextInput::make('finished_at')
+                    ->label(__('filament-jobs-monitor::translations.finished_at'))
+                    ->formatStateUsing(fn(string $state): string => Carbon::parse($state)->toDateTimeString()),
                 TextInput::make('attempt')
                     ->required(),
+                TextInput::make('failed')
+                    ->label(__('filament-jobs-monitor::translations.status'))
+                    ->formatStateUsing(fn(bool $state): string => $state ? "Failed" : "Success"),
+                Textarea::make('payload')
+                    ->maxLength(65535)
+                    ->columnSpanFull()
+                    ->autosize(),
                 Textarea::make('exception_message')
-                    ->maxLength(65535),
+                    ->maxLength(65535)
+                    ->columnSpanFull()
+                    ->autosize(),
             ]);
     }
 
@@ -54,7 +73,7 @@ class QueueMonitorResource extends Resource
                     ->formatStateUsing(fn(string $state): string => __("filament-jobs-monitor::translations.{$state}"))
                     ->color(fn(string $state): string => match ($state) {
                         'running' => 'primary',
-                        'succeeded' => 'success',
+                        'success' => 'success',
                         'failed' => 'danger',
                     }),
                 TextColumn::make('name')
@@ -66,15 +85,23 @@ class QueueMonitorResource extends Resource
                 TextColumn::make('connection')
                     ->label(__('filament-jobs-monitor::translations.connection'))
                     ->sortable()
-                    ->searchable(),
+                    ->searchable()
+                    ->default(config('queue.default')),
                 TextColumn::make('queue')
                     ->label(__('filament-jobs-monitor::translations.queue'))
                     ->sortable()
                     ->searchable(),
                 TextColumn::make('progress')
+                    ->badge()
                     ->label(__('filament-jobs-monitor::translations.progress'))
+                    ->sortable()
+                    ->alignCenter()
                     ->formatStateUsing(fn(string $state) => "{$state}%")
-                    ->sortable(),
+                    ->color(fn(string $state): string => match (true) {
+                        $state >= 30 => 'primary',
+                        $state >= 70 => 'success',
+                        default => 'danger',
+                    }),
                 TextColumn::make('started_at')
                     ->label(__('filament-jobs-monitor::translations.started_at'))
                     ->since()
@@ -85,6 +112,10 @@ class QueueMonitorResource extends Resource
                     ->sortable(),
             ])
             ->defaultSort('started_at', 'desc')
+            ->actions([
+                ViewAction::make()
+                    ->button(),
+            ])
             ->bulkActions([
                 DeleteBulkAction::make(),
             ]);

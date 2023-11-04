@@ -28,9 +28,10 @@ class QueueMonitor extends Model
     ];
 
     protected $casts = [
-        'failed' => 'bool',
-        'started_at' => 'datetime',
+        'failed'      => 'bool',
+        'started_at'  => 'datetime',
         'finished_at' => 'datetime',
+        'payload'     => 'json',
     ];
 
     /*
@@ -43,7 +44,7 @@ class QueueMonitor extends Model
         return Attribute::make(
             get: function () {
                 if ($this->isFinished()) {
-                    return $this->failed ? 'failed' : 'succeeded';
+                    return $this->failed ? 'failed' : 'success';
                 }
 
                 return 'running';
@@ -87,15 +88,15 @@ class QueueMonitor extends Model
     }
 
     /**
-     * check if the job has succeeded.
+     * check if the job has success.
      */
     public function hasSucceeded(): bool
     {
-        if (! $this->isFinished()) {
+        if (!$this->isFinished()) {
             return false;
         }
 
-        return ! $this->hasFailed();
+        return !$this->hasFailed();
     }
 
     /**
