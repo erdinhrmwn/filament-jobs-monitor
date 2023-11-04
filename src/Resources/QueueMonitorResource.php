@@ -111,6 +111,8 @@ class QueueMonitorResource extends Resource
                     ->since()
                     ->sortable(),
             ])
+            ->poll('10s')
+            ->deferLoading()
             ->defaultSort('started_at', 'desc')
             ->actions([
                 ViewAction::make()
