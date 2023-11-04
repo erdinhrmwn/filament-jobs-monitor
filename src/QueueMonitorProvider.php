@@ -22,7 +22,7 @@ class QueueMonitorProvider extends ServiceProvider
     {
         //
         Queue::before(static function (JobProcessing $event) {
-            self::jobStarted($event->job);
+            self::jobStarted($event->connectionName, $event->job);
         });
 
         Queue::after(static function (JobProcessed $event) {
@@ -49,17 +49,16 @@ class QueueMonitorProvider extends ServiceProvider
     /**
      * Start Queue Monitoring for Job.
      */
-    protected static function jobStarted(JobContract $job): void
+    protected static function jobStarted(string $connectionName, JobContract $job): void
     {
-        $now = now();
         $jobId = self::getJobId($job);
 
         $monitor = QueueMonitor::query()->create([
             'job_id' => $jobId,
             'name' => $job->resolveName(),
-            'connection' => $job->connectionName(),
+            'connection' => $connectionName,
             'queue' => $job->getQueue(),
-            'started_at' => $now,
+            'started_at' => now(),
             'attempt' => $job->attempts(),
             'progress' => 0,
             'payload' => $job->payload(),
