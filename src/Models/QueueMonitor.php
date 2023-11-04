@@ -59,7 +59,7 @@ class QueueMonitor extends Model
 
     public static function getJobId(JobContract $job): string|int
     {
-        if ($jobId = $job->getJobId()) {
+        if ($jobId = $job->uuid()) {
             return $jobId;
         }
 
