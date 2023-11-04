@@ -72,8 +72,8 @@ class QueueMonitorResource extends Resource
                     ->sortable(['failed'])
                     ->formatStateUsing(fn(string $state): string => __("filament-jobs-monitor::translations.{$state}"))
                     ->color(fn(string $state): string => match ($state) {
-                        'running' => 'primary',
                         'success' => 'success',
+                        'running' => 'primary',
                         'failed' => 'danger',
                     }),
                 TextColumn::make('name')
@@ -98,8 +98,8 @@ class QueueMonitorResource extends Resource
                     ->alignCenter()
                     ->formatStateUsing(fn(string $state) => "{$state}%")
                     ->color(fn(string $state): string => match (true) {
-                        $state >= 30 => 'primary',
                         $state >= 70 => 'success',
+                        $state >= 30 => 'primary',
                         default => 'danger',
                     }),
                 TextColumn::make('started_at')
