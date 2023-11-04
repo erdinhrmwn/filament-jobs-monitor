@@ -6,7 +6,6 @@ use Croustibat\FilamentJobsMonitor\FilamentJobsMonitorPlugin;
 use Croustibat\FilamentJobsMonitor\Models\QueueMonitor;
 use Croustibat\FilamentJobsMonitor\Resources\QueueMonitorResource\Pages;
 use Croustibat\FilamentJobsMonitor\Resources\QueueMonitorResource\Widgets\QueueStatsOverview;
-use Filament\Actions\Action;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -16,7 +15,6 @@ use Filament\Resources\Resource;
 use Filament\Tables\Actions\DeleteBulkAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
-use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Str;
 
 class QueueMonitorResource extends Resource
@@ -52,7 +50,7 @@ class QueueMonitorResource extends Resource
                 TextColumn::make('status')
                     ->badge()
                     ->label(__('filament-jobs-monitor::translations.status'))
-                    ->sortable(['failed', 'finished_at'])
+                    ->sortable(['failed'])
                     ->formatStateUsing(fn(string $state): string => __("filament-jobs-monitor::translations.{$state}"))
                     ->color(fn(string $state): string => match ($state) {
                         'running' => 'primary',
@@ -62,7 +60,9 @@ class QueueMonitorResource extends Resource
                 TextColumn::make('name')
                     ->label(__('filament-jobs-monitor::translations.name'))
                     ->sortable()
-                    ->searchable(),
+                    ->searchable()
+                    ->formatStateUsing(fn(string $state): string => str($state)->explode("\\")->last())
+                    ->description(fn(string $state): string => str($state)->explode("\\")->slice(0, -1)->implode('\\')),
                 TextColumn::make('connection')
                     ->label(__('filament-jobs-monitor::translations.connection'))
                     ->sortable()
@@ -85,12 +85,6 @@ class QueueMonitorResource extends Resource
                     ->sortable(),
             ])
             ->defaultSort('started_at', 'desc')
-            ->actions([
-                Action::make('retry')
-                    ->color('danger')
-                    ->action(fn(string $jobId) => Artisan::call('queue:retry ' . $jobId))
-                    ->requiresConfirmation(),
-            ])
             ->bulkActions([
                 DeleteBulkAction::make(),
             ]);
